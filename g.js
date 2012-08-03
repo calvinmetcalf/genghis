@@ -182,4 +182,6 @@ function tileBase(h,type){
  
         return new bases.t[type](h);   
   
-    }
+    };
+exports.t=tileBase;
+exports.h=hashBase;
