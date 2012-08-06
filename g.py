@@ -14,8 +14,8 @@ def get(indb,outdb):
     sdb = sqlite3.connect(indb)
     server = couchdbkit.Server()
     db = server.create_db(outdb)
-    show = {"_id":"_design/m","shows":{"tile":"function(doc, req) {return {base64 :doc.tile,headers : {'Content-Type' :'image/png'}  };}","grid":"function(doc, req) {return {body :doc.grid,headers : {'Content-Type' :'application/json'}  };}"}}
-    metadata = dict(con.execute('select name, value from metadata;').fetchall())
+    show = {"_id":"_design/m","shows":{"tile":"function(doc, req) {if(doc){return {base64 :doc.tile,headers : {'Content-Type' :'image/png'}} }else{return {base64 :'iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAYAAABccqhmAAADGUlEQVR4nO3UMQEAAAiAMPuX1hgebAm4mAWy5jsA+GMAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEHbmUDvFpM58qAAAAABJRU5ErkJggg==',headers : {'Content-Type' :'image/png'}}};}","grid":"function(doc, req) {if(doc){return {body :doc.grid,headers : {'Content-Type' :'application/json'}}  }else{return {body :{},headers : {'Content-Type' :'application/json'}}  };}"}}
+    metadata = dict(sdb.execute('select name, value from metadata;').fetchall())
     metadata["_id"]="metadata"
     db.save_docs([show,metadata])
     tiles = sdb.execute('select zoom_level, tile_column, tile_row, tile_data from tiles;')
@@ -52,7 +52,7 @@ def getJSON(db,z,y,x,d):
 
 def getGrids(db):
     try:
-        gdc = db.execute('select key_name, key_json FROM grid_data)
+        gdc = db.execute('select key_name, key_json FROM grid_data')
         gd=gdc.fetchone()
         data={}
         while gd:
