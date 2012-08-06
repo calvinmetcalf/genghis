@@ -33,8 +33,10 @@ def get(indb,outdb):
         r=""
         for i in range(z):
             r = r+tab[bx[i]][by[i]]
-        j = getJSON(sdb,z,y1,x,d)
-        doc={'_id':r,'z':z,'x':x,'y':y,grid:j,'tile':base64.b64encode(t[3])}
+        doc={'_id':r,'z':z,'x':x,'y':y,'tile':base64.b64encode(t[3])}
+        if d:
+            j = getJSON(sdb,z,y1,x,d)
+            doc["grid"]=j
         docs.append(doc)
         if len(docs)>500:
             db.save_docs(docs)
@@ -49,10 +51,13 @@ def getJSON(db,z,y,x,d):
     
 
 def getGrids(db):
-    gdc = db.execute('select key_name, key_json FROM grid_data)
-    gd=gdc.fetchone()
-    data={}
-    while gd:
-        data[gd[0]]=json.loads(gd[1])
+    try:
+        gdc = db.execute('select key_name, key_json FROM grid_data)
         gd=gdc.fetchone()
+        data={}
+        while gd:
+            data[gd[0]]=json.loads(gd[1])
+            gd=gdc.fetchone()
+    except:
+        data={}
     return data
