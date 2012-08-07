@@ -42,6 +42,7 @@ def get(indb,outdb):
             db.save_docs(docs)
             docs=[]
         t = tiles.fetchone()
+    db.save_docs(docs)
 
 def getJSON(db,z,y,x,d):
     grids = db.execute('select grid from grids where zoom_level=:z and tile_column =:x and tile_row=:y',{"z":z,"x":x,"y":y}).fetchone()
@@ -51,13 +52,11 @@ def getJSON(db,z,y,x,d):
     
 
 def getGrids(db):
+    data={}
     try:
         gdc = db.execute('select key_name, key_json FROM grid_data')
         gd=gdc.fetchone()
-        data={}
         while gd:
             data[gd[0]]=json.loads(gd[1])
             gd=gdc.fetchone()
-    except:
-        data={}
     return data
