@@ -19,7 +19,7 @@ def get(indb,outdb):
     metadata["_id"]="metadata"
     db.save_docs([show,metadata])
     tiles = sdb.execute('select zoom_level, tile_column, tile_row, tile_data from tiles;')
-    d= getGrids(db)
+    d= getGrids(sdb)
     docs=[]
     t=tiles.fetchone()
     while t:
