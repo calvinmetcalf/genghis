@@ -52,11 +52,13 @@ def getJSON(db,z,y,x,d):
     
 
 def getGrids(db):
-    data={}
     try:
+        data={}
         gdc = db.execute('select key_name, key_json FROM grid_data')
         gd=gdc.fetchone()
         while gd:
             data[gd[0]]=json.loads(gd[1])
             gd=gdc.fetchone()
+    except:
+        data={}
     return data
