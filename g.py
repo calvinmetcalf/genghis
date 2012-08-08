@@ -32,6 +32,7 @@ def up(indb,outdb):
     d= getGrids(sdb)
     tiles = sdb.execute('select zoom_level, tile_column, tile_row, tile_data from tiles;')
     docs=[]
+    docsl=0
     t=tiles.fetchone()
     while t:
         z = t[0]
@@ -44,8 +45,14 @@ def up(indb,outdb):
             j = getJSON(sdb,z,x,y1,d)
             doc["grid"]=j
         docs.append(doc)
+        docsl=docsl+1
+        if docsl>1000:
+            db.save_docs(docs)
+            docs=[]
+            docsl=0
         t = tiles.fetchone()
     db.save_docs(docs)
+    sdb.close()
 
 def getJSON(db,z,x,y,d):
     grids = db.execute('select grid from grids where zoom_level=:z and tile_column =:x and tile_row=:y',{"z":z,"x":x,"y":y}).fetchone()
