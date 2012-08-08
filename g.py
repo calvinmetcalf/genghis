@@ -28,7 +28,10 @@ def up(indb,outdb):
     db = server.create_db(outdb)
     show = getShow()
     metadata = getMeta(sdb)
-    db.save_docs([show,metadata])
+    db.save_doc(show)
+    db.save_doc(metadata)
+    db.put_attachment(show,open("index.html"),"index.html","text/html")
+    db.put_attachment(show,open("script.js"),"script.js","application/javascript")
     d= getGrids(sdb)
     tiles = sdb.execute('select zoom_level, tile_column, tile_row, tile_data from tiles;')
     docs=[]
