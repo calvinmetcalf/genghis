@@ -9,17 +9,28 @@ def makeBin(x,z):
     while len(bx)<z:
         bx="0"+bx
     return bx
+
+def quad(z,x,y):
+    bx = makeBin(x,z)
+    by = makeBin(y,z)
+    tab = dict({"0":{"0":"a","1":"b"},"1":{"0":"c","1":"d"}})
+    r=""
+    if z==0:
+        r="z"
+    else:
+        for i in range(z):
+            r = r+tab[bx[i]][by[i]]
+    return r
     
-def get(indb,outdb):
+def up(indb,outdb):
     sdb = sqlite3.connect(indb)
     server = couchdbkit.Server()
     db = server.create_db(outdb)
-    show = {"_id":"_design/m","shows":{"tile":"function(doc, req) {if(doc){return {base64 :doc.tile,headers : {'Content-Type' :'image/png'}} }else{return {base64 :'iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAYAAABccqhmAAADGUlEQVR4nO3UMQEAAAiAMPuX1hgebAm4mAWy5jsA+GMAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEHbmUDvFpM58qAAAAABJRU5ErkJggg==',headers : {'Content-Type' :'image/png'}}};}","grid":"function(doc, req) {if(doc){return {body :doc.grid,headers : {'Content-Type' :'application/json'}}  }else{return {body :{},headers : {'Content-Type' :'application/json'}}  };}"}}
-    metadata = dict(sdb.execute('select name, value from metadata;').fetchall())
-    metadata["_id"]="metadata"
+    show = getShow()
+    metadata = getMeta(sdb)
     db.save_docs([show,metadata])
-    tiles = sdb.execute('select zoom_level, tile_column, tile_row, tile_data from tiles;')
     d= getGrids(sdb)
+    tiles = sdb.execute('select zoom_level, tile_column, tile_row, tile_data from tiles;')
     docs=[]
     t=tiles.fetchone()
     while t:
@@ -27,38 +38,38 @@ def get(indb,outdb):
         x = t[1]
         y1 = t[2]
         y = flip_y(z,y1)
-        bx = makeBin(x,z)
-        by = makeBin(y,z)
-        tab = dict({"0":{"0":"a","1":"b"},"1":{"0":"c","1":"d"}})
-        r=""
-        for i in range(z):
-            r = r+tab[bx[i]][by[i]]
+        r=quad(z,x,y)
         doc={'_id':r,'z':z,'x':x,'y':y,'tile':base64.b64encode(t[3])}
         if d:
-            j = getJSON(sdb,z,y1,x,d)
+            j = getJSON(sdb,z,x,y1,d)
             doc["grid"]=j
         docs.append(doc)
-        if len(docs)>500:
-            db.save_docs(docs)
-            docs=[]
         t = tiles.fetchone()
     db.save_docs(docs)
 
-def getJSON(db,z,y,x,d):
+def getJSON(db,z,x,y,d):
     grids = db.execute('select grid from grids where zoom_level=:z and tile_column =:x and tile_row=:y',{"z":z,"x":x,"y":y}).fetchone()
     jd= json.loads(zlib.decompress(grids[0]))
-    jd["data"]=d
+    data={}
+    for k in jd["keys"]:
+        if k:
+            data[k]=d[k]
+    jd["data"]=data
     return json.dumps(jd)
-    
 
 def getGrids(db):
-    try:
-        data={}
-        gdc = db.execute('select key_name, key_json FROM grid_data')
-        gd=gdc.fetchone()
-        while gd:
-            data[gd[0]]=json.loads(gd[1])
-            gd=gdc.fetchone()
-    except:
-        data={}
+    data = dict(db.execute('select key_name, key_json FROM grid_data').fetchall())
     return data
+
+def getShow():
+    s={}
+    s["_id"]="_design/m"
+    s["shows"]={}
+    s["shows"]["tile"]="function(doc, req) {if(doc&&doc.tile){return {base64 :doc.tile,headers : {'Content-Type' :'image/png'}} }else{return {base64 :'iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAYAAABccqhmAAADGUlEQVR4nO3UMQEAAAiAMPuX1hgebAm4mAWy5jsA+GMAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEGYAEHbmUDvFpM58qAAAAABJRU5ErkJggg==',headers : {'Content-Type' :'image/png'}}};}"
+    s["shows"]["grid"]="function(doc, req) {if(doc&&doc.grid){return {body :doc.grid,headers : {'Content-Type' :'application/json'}}  }else{return {body :{},headers : {'Content-Type' :'application/json'}}  };}"
+    return s
+    
+def getMeta(db):
+    m=dict(db.execute('select name, value from metadata;').fetchall())
+    m["_id"]="metadata"
+    return m
