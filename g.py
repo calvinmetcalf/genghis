@@ -23,15 +23,19 @@ def quad(z,x,y):
     return r
     
 def up(indb,outdb):
+    print "opening sqlite db"
     sdb = sqlite3.connect(indb)
+    print "opend it"
     server = couchdbkit.Server()
     db = server.create_db(outdb)
+    print "creating couch"
     show = getShow()
     metadata = getMeta(sdb)
-    db.save_doc(show)
     db.save_doc(metadata)
-    db.put_attachment(show,open("index.html"),"index.html","text/html")
-    db.put_attachment(show,open("script.js"),"script.js","application/javascript")
+    #db.save_doc(show)
+    #db.put_attachment(show,open("index.html"),"index.html","text/html")
+    #db.put_attachment(show,open("script.js"),"script.js","application/javascript")
+    db.save_doc(show)
     d= getGrids(sdb)
     tiles = sdb.execute('select zoom_level, tile_column, tile_row, tile_data from tiles;')
     docs=[]
@@ -49,6 +53,7 @@ def up(indb,outdb):
             doc["grid"]=j
         docs.append(doc)
         docsl=docsl+1
+        print str(docsl)
         if docsl>1000:
             db.save_docs(docs)
             docs=[]
